@@ -43,35 +43,35 @@ func UnzipString(str string) (string, error) {
 	}
 
 	var resultStr strings.Builder
-	for i := 0; i < len(str); i++ {
-		if (i + 1) < (len(str) - 1) {
-			if unicode.IsDigit(rune(str[i+1])) && string(str[i]) != "\n" {
-				//если число получаем кол-во
-				count, err := strconv.Atoi(string(str[i+1]))
-				if err != nil {
-					fmt.Println(err)
-				}
-				resultStr.WriteString(strings.Repeat(string(str[i]), count))
-			} else {
-				if string(str[i]) == "\n" {
-					continue
-				} else {
-					resultStr.WriteString(string(str[i]))
-				}
+	var lastChar rune
+	isBackSlash := false
+	for _, char := range str {
+		switch {
+		case unicode.IsDigit(rune(char)):
+			if lastChar == 0 {
+				continue
 			}
-		} else { // кейс последнего эл-та
-			//проверить если предпоследний эл-т это экранирование тогда стоп
-			//Проверить если последнее это число и перед стоящий эл-т что
-			if unicode.IsDigit(rune(str[i])) {
-				count, err := strconv.Atoi(string(str[i]))
-				if err != nil {
-					fmt.Println(err)
-				}
-				resultStr.WriteString(strings.Repeat(string(str[i]), count))
+			if isBackSlash {
+				resultStr.WriteString(string(char))
+				lastChar = char
+				isBackSlash = false
+				continue
 			}
-			if string(str[i]) != "\n" {
-				resultStr.WriteString(string(str[i]))
+			count, err := strconv.Atoi(string(char))
+			if err != nil {
+				fmt.Println(err)
 			}
+			resultStr.WriteString(strings.Repeat(string(lastChar), count-1))
+			lastChar = char
+		case char == '\\':
+			isBackSlash = true
+		case isBackSlash:
+			resultStr.WriteString(string(char))
+			lastChar = char
+			isBackSlash = false
+		default:
+			resultStr.WriteString(string(char))
+			lastChar = char
 		}
 	}
 	return resultStr.String(), nil

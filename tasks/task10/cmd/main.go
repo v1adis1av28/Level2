@@ -34,9 +34,9 @@ func main() {
 	fmt.Println(config.CheckSorted, config.IgnoreBlanks, config.HumanNumeric, config.Numeric, config.KeyColumn)
 
 	strs := reader.ReadStdin()
-	rever := make([]string, len(strs))
-	copy(rever, strs)
 	sort.BaseSort(strs)
-	fmt.Println("Reverse sort")
-	sort.ReverseSort(strs)
+	fmt.Println("unique sort")
+	sort.UniqueSort(strs)
 }
+
+//todo как сохранять регистр и при этом сортровать строки, сейчас из-за приведения строки к нижнему регистру на уникальной сортировке пропадает две строки

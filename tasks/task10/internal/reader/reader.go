@@ -16,11 +16,9 @@ func ReadStdin() []string {
 		line := scanner.Text()
 		strs = append(strs, strings.ToLower(line))
 	}
-
 	if err := scanner.Err(); err != nil {
 		fmt.Println(os.Stderr, "reading error", err)
 		return nil
 	}
-
 	return strs
 }

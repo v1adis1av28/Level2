@@ -3,13 +3,17 @@ package sort
 import (
 	"fmt"
 	"sort"
-	"strings"
 )
 
 func BaseSort(strs []string) {
-	for i, str := range strs {
-		strs[i] = strings.ToLower(str)
-	}
 	sort.Strings(strs)
 	fmt.Println(strs)
+}
+
+func ReverseSort(arr []string) {
+	sort.Strings(arr)
+	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
+		arr[i], arr[j] = arr[j], arr[i]
+	}
+	fmt.Println(arr)
 }

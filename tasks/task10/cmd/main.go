@@ -34,7 +34,9 @@ func main() {
 	fmt.Println(config.CheckSorted, config.IgnoreBlanks, config.HumanNumeric, config.Numeric, config.KeyColumn)
 
 	strs := reader.ReadStdin()
-
+	rever := make([]string, len(strs))
+	copy(rever, strs)
 	sort.BaseSort(strs)
-
+	fmt.Println("Reverse sort")
+	sort.ReverseSort(strs)
 }

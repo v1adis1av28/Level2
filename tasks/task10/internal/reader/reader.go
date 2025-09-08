@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func ReadStdin() []string {
@@ -13,7 +14,7 @@ func ReadStdin() []string {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		strs = append(strs, line)
+		strs = append(strs, strings.ToLower(line))
 	}
 
 	if err := scanner.Err(); err != nil {

@@ -2,26 +2,36 @@ package reader
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/v1adis1av28/level2/tasks/task13/internal/cut"
 )
 
+var DefaltDelimetr string = " "
+
 func ReadLine(delimetr string) []cut.Line {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println(delimetr)
 	strs := make([]cut.Line, 0)
+	isDefaultDelimetr := true
+	if delimetr != DefaltDelimetr {
+		isDefaultDelimetr = false
+	}
 	for scanner.Scan() {
-		text := scanner.Text()
-		line := cut.Line{Text: text}
-		if strings.Contains(text, delimetr) {
-			line.IsSeparated = true
+		line := scanner.Text()
+		if strings.Contains(line, delimetr) {
+			arr := make([]string, 0)
+			ln := cut.Line{FullString: line, CollumnsArr: arr, IsSeparated: true}
+			if isDefaultDelimetr {
+				arr = strings.Split(line, DefaltDelimetr)
+			} else {
+				arr = strings.Split(line, delimetr)
+			}
+			ln.CollumnsArr = arr
+			strs = append(strs, ln)
 		} else {
-			line.IsSeparated = false
+			strs = append(strs, cut.Line{FullString: line, CollumnsArr: []string{line}, IsSeparated: false})
 		}
-		strs = append(strs, line)
 	}
 	return strs
 }

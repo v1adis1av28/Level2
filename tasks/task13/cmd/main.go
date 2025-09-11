@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/v1adis1av28/level2/tasks/task13/internal/cut"
+	"github.com/v1adis1av28/level2/tasks/task13/internal/reader"
 )
 
 //Реализовать утилиту, которая считывает входные данные (STDIN) и разбивает каждую строку
@@ -23,14 +25,14 @@ import (
 // Все стандартные требования по качеству кода и тестам также применимы.
 
 func main() {
-	// options, err := cut.ParseOption()
-	// if err != nil {
-	// 	fmt.Errorf("Error on parsing options %v", err)
-	// 	os.Exit(1)
-	// }
-	// data := reader.ReadLine("\\n")
-	// // fmt.Println(options)
-	//cut.Start(data, options)
+	options, err := cut.ParseOption()
+	if err != nil {
+		fmt.Errorf("Error on parsing options %v", err)
+		os.Exit(1)
+	}
+	data := reader.ReadLine(options.Delimetr)
 
-	fmt.Println((cut.ParseFieldsFlag("3,4,5-8,11-20,41123")))
+	cut.Start(data, options)
+
+	//fmt.Println((cut.ParseFieldsFlag("3,4,5-8,11-20,41123")))
 }

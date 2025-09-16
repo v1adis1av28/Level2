@@ -5,18 +5,88 @@ import (
 	"strings"
 )
 
-// //test cases:
-// echo "hello world"
-// echo 'single quoted'
-// echo hello\ world
-// echo \"quoted\" -> "quoted"
-// echo \| -> |
-
 func Tokenize(str string) ([]string, error) {
 	if len(str) == 0 {
 		return []string{}, fmt.Errorf("Empty string")
 	}
-	tokenize := make([]string, 0)
+
+	tokens := make([]string, 0)
 	var builder strings.Builder
-	return tokenize, nil
+	isEscaped := false
+	isSingleQuoteOpen, isDoubleQuoteOpen := false, false
+
+	for i := 0; i < len(str); i++ {
+		currChar := str[i]
+
+		if isEscaped {
+			isEscaped = false
+			builder.WriteByte(currChar)
+			continue
+		}
+
+		if currChar == '\\' {
+			if isSingleQuoteOpen {
+				if i+1 < len(str) && str[i+1] == '\'' {
+					isEscaped = true
+					continue
+				}
+				builder.WriteByte(currChar)
+			} else {
+				if i+1 < len(str) {
+					nextChar := str[i+1]
+					if nextChar == '"' || nextChar == '\'' || nextChar == '\\' || nextChar == ' ' || nextChar == '|' {
+						isEscaped = true
+						continue
+					}
+				}
+				builder.WriteByte(currChar)
+			}
+			continue
+		}
+
+		if currChar == '\'' {
+			if isSingleQuoteOpen {
+				isSingleQuoteOpen = false
+				tokens = append(tokens, builder.String())
+				builder.Reset()
+			} else if !isDoubleQuoteOpen {
+				isSingleQuoteOpen = true
+			} else {
+				builder.WriteByte(currChar)
+			}
+			continue
+		}
+
+		if currChar == '"' {
+			if isDoubleQuoteOpen {
+				isDoubleQuoteOpen = false
+				tokens = append(tokens, builder.String())
+				builder.Reset()
+			} else if !isSingleQuoteOpen {
+				isDoubleQuoteOpen = true
+			} else {
+				builder.WriteByte(currChar)
+			}
+			continue
+		}
+
+		if currChar == ' ' && !isSingleQuoteOpen && !isDoubleQuoteOpen {
+			if builder.Len() > 0 {
+				tokens = append(tokens, builder.String())
+				builder.Reset()
+			}
+			continue
+		}
+		builder.WriteByte(currChar)
+	}
+
+	if builder.Len() > 0 {
+		tokens = append(tokens, builder.String())
+	}
+
+	if isDoubleQuoteOpen || isSingleQuoteOpen {
+		return nil, fmt.Errorf("unclosed quote")
+	}
+
+	return tokens, nil
 }

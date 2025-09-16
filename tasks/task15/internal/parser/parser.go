@@ -1,8 +1,12 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/v1adis1av28/level2/tasks/task15/internal/handler"
+	"github.com/v1adis1av28/level2/tasks/task15/internal/tokenizer"
 )
 
 func ParseLine(str string) error {
@@ -10,23 +14,24 @@ func ParseLine(str string) error {
 	if strings.Contains(str, "|") {
 		isPipeline = true
 	}
-	tokens := strings.Fields(str)
+	tokens, err := tokenizer.Tokenize(str)
+	if errors.Is(err, fmt.Errorf("unclosed quote")) {
+		return err
+	}
 	if len(tokens) == 0 {
-		return fmt.Errorf("Empty string")
+		return fmt.Errorf("empty string")
 	}
 	switch isPipeline {
 	case true:
-		handlePipline(tokens)
+		err := handler.HandlePiplineCommand(tokens)
+		if err != nil {
+			return err
+		}
 	case false:
-		handleSingleCommand(tokens)
+		err := handler.HandleSingleCommand(tokens)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
-}
-
-func handlePipline(tkns []string) { //здесь обрабатываем пайплайны
-	fmt.Println("pipline")
-}
-
-func handleSingleCommand(tkns []string) { //сюда так как пока не реалзуем && или || просто реализуем обработку единной команды
-	fmt.Println("Command compund")
 }

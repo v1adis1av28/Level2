@@ -1,10 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/v1adis1av28/level2/tasks/task15/internal/reader"
+	"github.com/v1adis1av28/level2/tasks/task15/internal/handler"
 )
 
 //Необходимо реализовать собственный простейший Unix shell.
@@ -35,8 +34,10 @@ import (
 
 func main() {
 
-	ReaderErr := reader.ReadLines()
-	if errors.Is(ReaderErr, fmt.Errorf("Empty string")) {
-		fmt.Println(ReaderErr.Error())
-	}
+	// ReaderErr := reader.ReadLines()
+	// if errors.Is(ReaderErr, fmt.Errorf("Empty string")) {
+	// 	fmt.Println(ReaderErr.Error())
+	// }
+	err := handler.HandleSingleCommand([]string{"cd", "pwd"})
+	fmt.Println(err)
 }

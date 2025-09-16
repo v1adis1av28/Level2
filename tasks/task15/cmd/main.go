@@ -1,9 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/v1adis1av28/level2/tasks/task15/internal/handler"
+	"github.com/v1adis1av28/level2/tasks/task15/internal/reader"
 )
 
 //Необходимо реализовать собственный простейший Unix shell.
@@ -27,21 +28,16 @@ import (
 // Совет: используйте пакеты os/exec, bufio (для ввода), strings.Fields (для разбиения командной
 // строки на аргументы) и системные вызовы через syscall, если потребуется.
 
-//todo
-// 1) написать ридер который будет читать строки от пользователя после чего передавать строку парсеру
-// 2) написать парсер, который будет валидировать строку и проверять на наличие ошибок и разбирать команды в строке
-// 3) написать command executor который будет выполнять команды полученные в строке
-
+// todo
+// add piplines handling
+// add tests on external + built in
+// add signals handling
 func main() {
 
-	// ReaderErr := reader.ReadLines()
-	// if errors.Is(ReaderErr, fmt.Errorf("Empty string")) {
-	// 	fmt.Println(ReaderErr.Error())
-	// }
-	err := handler.HandleSingleCommand([]string{"echo", "das 3dsa", "asd das"})
-
-	err = handler.HandleSingleCommand([]string{"kill", "12345"})
-	fmt.Println(err)
+	ReaderErr := reader.ReadLines()
+	if errors.Is(ReaderErr, fmt.Errorf("Empty string")) {
+		fmt.Println(ReaderErr.Error())
+	}
 	//err = handler.HandleSingleCommand([]string{"ps", "sad"})
 	//fmt.Println(err)
 }

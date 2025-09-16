@@ -21,7 +21,7 @@ func TestCommandHandler(t *testing.T) {
 		{[]string{"kill", "pwd"}, false, ""},
 		{[]string{"ps", "pwd"}, false, ""},
 	}
-
+	//todo add cases on different errors
 	for _, val := range testCases {
 		err := handler.HandleSingleCommand(val.input)
 		if err != nil {

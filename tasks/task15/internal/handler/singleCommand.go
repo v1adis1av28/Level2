@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strconv"
 	"strings"
@@ -13,10 +14,15 @@ import (
 var builInCommands []string = []string{"cd", "pwd", "echo", "kill", "ps"}
 
 func HandleSingleCommand(tkns []string) error {
-	if !slices.Contains(builInCommands, tkns[0]) {
-		return fmt.Errorf("unknown command")
+	if slices.Contains(builInCommands, tkns[0]) {
+		return handleBuiltInCommand(tkns)
+	} else {
+		return HandleExternalCommands(tkns)
 	}
 
+}
+
+func handleBuiltInCommand(tkns []string) error {
 	switch tkns[0] {
 	case "cd":
 		if len(tkns) < 2 {
@@ -67,4 +73,12 @@ func HandleSingleCommand(tkns []string) error {
 		}
 	}
 	return nil
+}
+
+func HandleExternalCommands(tkns []string) error {
+	cmd := exec.Command(tkns[0], tkns[1:]...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

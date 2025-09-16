@@ -23,10 +23,10 @@ func ParseLine(str string) error {
 	}
 	switch isPipeline {
 	case true:
-		err := handler.HandlePiplineCommand(tokens)
-		if err != nil {
-			return err
-		}
+		// err := handler.HandlePiplineCommand(tokens)
+		// if err != nil {
+		// 	return err
+		// }
 	case false:
 		err := handler.HandleSingleCommand(tokens)
 		if err != nil {

@@ -38,6 +38,10 @@ func main() {
 	// if errors.Is(ReaderErr, fmt.Errorf("Empty string")) {
 	// 	fmt.Println(ReaderErr.Error())
 	// }
-	err := handler.HandleSingleCommand([]string{"cd", "pwd"})
+	err := handler.HandleSingleCommand([]string{"echo", "das 3dsa", "asd das"})
+
+	err = handler.HandleSingleCommand([]string{"kill", "12345"})
 	fmt.Println(err)
+	//err = handler.HandleSingleCommand([]string{"ps", "sad"})
+	//fmt.Println(err)
 }

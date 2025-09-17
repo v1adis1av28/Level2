@@ -17,7 +17,7 @@ func ReadLines() error {
 		}
 		err := parser.ParseLine(line)
 		if err != nil {
-			return err
+			fmt.Println(err.Error())
 		}
 	}
 

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 
 	"github.com/v1adis1av28/level2/tasks/task15/internal/reader"
 )
@@ -28,16 +29,15 @@ import (
 // Совет: используйте пакеты os/exec, bufio (для ввода), strings.Fields (для разбиения командной
 // строки на аргументы) и системные вызовы через syscall, если потребуется.
 
-// todo
-// add piplines handling
-// add tests on external + built in
-// add signals handling
 func main() {
 
-	ReaderErr := reader.ReadLines()
-	if errors.Is(ReaderErr, fmt.Errorf("Empty string")) {
-		fmt.Println(ReaderErr.Error())
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+
+	fmt.Println("Light version of unix shell!")
+
+	if err := reader.ReadLines(); err != nil {
+		fmt.Fprintf(os.Stderr, "Shell error: %v\n", err)
+		os.Exit(1)
 	}
-	//err = handler.HandleSingleCommand([]string{"ps", "sad"})
-	//fmt.Println(err)
 }

@@ -1,9 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Config struct {
-	BaseDir      string
 	MaxDepth     int
 	Url          string
 	WorkersCount int

@@ -8,14 +8,23 @@ import (
 )
 
 func CreateLocalDir(url string) string {
-	// Создаем основную директорию data если не существует
-	if err := os.MkdirAll("./data", 0755); err != nil {
-		log.Fatalf("Failed to create base directory: %v", err)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir = "."
 	}
 
-	// Создаем поддиректорию на основе домена
+	baseDir := filepath.Join(homeDir, "web_crawler_data")
+
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		log.Printf("Warning: Could not create %s, trying current directory: %v", baseDir, err)
+		baseDir = "./web_crawler_data"
+		if err := os.MkdirAll(baseDir, 0755); err != nil {
+			log.Fatalf("Failed to create output directory: %v", err)
+		}
+	}
+
 	domain := sanitizeDomain(url)
-	outputDir := filepath.Join("./data", domain)
+	outputDir := filepath.Join(baseDir, domain)
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
@@ -26,7 +35,6 @@ func CreateLocalDir(url string) string {
 }
 
 func sanitizeDomain(urlStr string) string {
-	// Убираем протокол и путь, оставляем только домен
 	domain := urlStr
 	if strings.Contains(domain, "://") {
 		domain = strings.Split(domain, "://")[1]
@@ -35,7 +43,6 @@ func sanitizeDomain(urlStr string) string {
 		domain = strings.Split(domain, "/")[0]
 	}
 
-	// Заменяем недопустимые символы
 	domain = strings.ReplaceAll(domain, ":", "_")
 	domain = strings.ReplaceAll(domain, ".", "_")
 	domain = strings.ReplaceAll(domain, "-", "_")
@@ -43,8 +50,11 @@ func sanitizeDomain(urlStr string) string {
 	return domain
 }
 
-// EnsureDir создает директорию для файла если не существует
 func EnsureDir(filePath string) error {
 	dir := filepath.Dir(filePath)
 	return os.MkdirAll(dir, 0755)
+}
+
+func SaveFile(path string, content []byte) error {
+	return os.WriteFile(path, content, 0644)
 }

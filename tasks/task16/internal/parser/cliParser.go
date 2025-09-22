@@ -33,8 +33,6 @@ func isUrlValid(str string) bool {
 	if u.Scheme == "" || u.Host == "" {
 		return false
 	}
-
-	// Проверяем поддерживаемые схемы
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return false
 	}

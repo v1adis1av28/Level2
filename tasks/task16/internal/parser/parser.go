@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/html"
 )
 
-// ExtractLinksAndAssets извлекает все ссылки и ресурсы из HTML
 func ExtractLinksAndAssets(htmlContent, baseURL string) ([]string, []string, error) {
 	doc, err := html.Parse(strings.NewReader(htmlContent))
 	if err != nil {
@@ -56,12 +55,6 @@ func ExtractLinksAndAssets(htmlContent, baseURL string) ([]string, []string, err
 						if absURL, err := resolveURL(base, u); err == nil {
 							assets = append(assets, absURL)
 						}
-					}
-				}
-			case "source", "video", "audio":
-				if src := getAttr(n, "src"); src != "" {
-					if absURL, err := resolveURL(base, src); err == nil {
-						assets = append(assets, absURL)
 					}
 				}
 			}

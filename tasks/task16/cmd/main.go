@@ -9,7 +9,6 @@ import (
 
 func main() {
 	cfg := models.Config{
-		BaseDir:      "./data",
 		MaxDepth:     2,
 		WorkersCount: 10,
 		Timeout:      30 * time.Second,

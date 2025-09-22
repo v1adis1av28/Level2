@@ -16,56 +16,40 @@ import (
 )
 
 type App struct {
-	Visited map[string]bool
-	Mutex   sync.Mutex
-	Queue   chan models.Job
-	WG      sync.WaitGroup
+	Visited     map[string]bool
+	Mutex       sync.Mutex
+	Queue       chan models.Job
+	WG          sync.WaitGroup
+	IsCompleted bool
 }
 
 func StartApp(cfg *models.Config) {
-	// 1. Получаем URL от пользователя и создаем директорию
 	targetURL, outDir := getUserInput()
 	if targetURL == "" {
 		log.Fatal("No URL provided")
 	}
 	cfg.Url = targetURL
-
-	fmt.Printf("Starting download of: %s\n", targetURL)
-	fmt.Printf("Output directory: %s\n", outDir)
-	fmt.Printf("Max depth: %d, Workers: %d\n", cfg.MaxDepth, cfg.WorkersCount)
-
-	// 2. Создаем приложение
 	app := &App{
 		Visited: make(map[string]bool),
-		Mutex:   sync.Mutex{},
-		Queue:   make(chan models.Job, 1000), // Увеличиваем буфер
-		WG:      sync.WaitGroup{},
+		Queue:   make(chan models.Job, 1000),
 	}
 
-	// 3. Парсим базовый URL
 	baseUrl, err := url.Parse(cfg.Url)
 	if err != nil {
 		log.Fatal("Invalid URL:", err)
 	}
 
-	// 4. Запускаем воркеры
 	for i := 0; i < cfg.WorkersCount; i++ {
 		app.WG.Add(1)
-		go downloader.Worker(app, outDir, baseUrl, cfg)
+		go downloader.Worker(app, outDir, baseUrl, cfg, &app.WG, app.Queue) // Pass the queue
 	}
 
-	// 5. Добавляем первую задачу в отдельной горутине
-	go func() {
-		app.Queue <- models.Job{
-			URL:   cfg.Url,
-			Depth: cfg.MaxDepth,
-		}
-		fmt.Printf("Added initial job: %s (depth: %d)\n", cfg.Url, cfg.MaxDepth)
-	}()
+	app.Queue <- models.Job{
+		URL:   cfg.Url,
+		Depth: cfg.MaxDepth,
+	}
 
-	// 6. Ждем завершения всех задач
 	app.waitForCompletion()
-	fmt.Printf("Download completed! Saved successfully to %s\n", outDir)
 }
 
 func getUserInput() (string, string) {
@@ -75,7 +59,7 @@ func getUserInput() (string, string) {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if !scanner.Scan() {
-		log.Fatal("No input provided")
+		log.Fatal("No input")
 	}
 
 	line := strings.TrimSpace(scanner.Text())
@@ -83,42 +67,37 @@ func getUserInput() (string, string) {
 		log.Fatal("Empty input")
 	}
 
-	// Валидируем команду
 	if err := cliparser.Parse(line); err != nil {
 		log.Fatal("Error parsing command:", err)
 	}
 
-	// Извлекаем URL
 	tokens := strings.Fields(line)
 	if len(tokens) < 2 {
 		log.Fatal("Not enough arguments. Usage: wget <URL>")
 	}
 	url := tokens[1]
 
-	// Создаем директорию
 	localDir := filesaver.CreateLocalDir(url)
 	return url, localDir
 }
 
 func (a *App) waitForCompletion() {
-	// Создаем канал для сигнала о завершении
-	done := make(chan bool)
-
-	// Запускаем мониторинг завершения
 	go func() {
 		a.WG.Wait()
 		close(a.Queue)
-		done <- true
+		a.IsCompleted = true
 	}()
 
-	// Ждем сигнала о завершении
-	<-done
+	a.WG.Wait()
 }
 
-// AddJob безопасно добавляет задачу в очередь
 func (a *App) AddJob(job models.Job) {
 	a.Mutex.Lock()
 	defer a.Mutex.Unlock()
+
+	if a.IsCompleted {
+		return
+	}
 
 	if !a.Visited[job.URL] && job.Depth >= 0 {
 		a.Visited[job.URL] = true

@@ -3,100 +3,130 @@ package app
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"net/http"
+	"log"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/v1adis1av28/level2/tasks/task16/internal/downloader"
-	filesaver "github.com/v1adis1av28/level2/tasks/task16/internal/fileSaver"
-	cliparser "github.com/v1adis1av28/level2/tasks/task16/internal/parser/cliParser"
+	"github.com/v1adis1av28/level2/tasks/task16/internal/filesaver"
+	"github.com/v1adis1av28/level2/tasks/task16/internal/models"
+	cliparser "github.com/v1adis1av28/level2/tasks/task16/internal/parser"
 )
 
-type Config struct {
-	MaxDepth   int
-	MaxWorkers int
-	Timeout    time.Duration
-	UserAgent  string
+type App struct {
+	Visited map[string]bool
+	Mutex   sync.Mutex
+	Queue   chan models.Job
+	WG      sync.WaitGroup
 }
 
-type Crawler struct {
-	config  Config
-	visited *sync.Map
-	queue   chan *Task
-	client  *http.Client
-	baseURL *url.URL
-	baseDir string
-}
+func StartApp(cfg *models.Config) {
+	// 1. Получаем URL от пользователя и создаем директорию
+	targetURL, outDir := getUserInput()
+	if targetURL == "" {
+		log.Fatal("No URL provided")
+	}
+	cfg.Url = targetURL
 
-type Task struct {
-	URL   string
-	Depth int
-}
+	fmt.Printf("Starting download of: %s\n", targetURL)
+	fmt.Printf("Output directory: %s\n", outDir)
+	fmt.Printf("Max depth: %d, Workers: %d\n", cfg.MaxDepth, cfg.WorkersCount)
 
-func NewCrawler(cfg Config, uri string) *Crawler {
-	baseUrl, err := url.Parse(uri)
+	// 2. Создаем приложение
+	app := &App{
+		Visited: make(map[string]bool),
+		Mutex:   sync.Mutex{},
+		Queue:   make(chan models.Job, 1000), // Увеличиваем буфер
+		WG:      sync.WaitGroup{},
+	}
+
+	// 3. Парсим базовый URL
+	baseUrl, err := url.Parse(cfg.Url)
 	if err != nil {
-		fmt.Println("Error on creating crawler on parsing base uri")
-		return nil
+		log.Fatal("Invalid URL:", err)
 	}
-	return &Crawler{
-		config:  cfg,
-		visited: &sync.Map{},
-		queue:   make(chan *Task),
-		client:  downloader.CreateHTTPClient(cfg.Timeout),
-		baseDir: "./data",
-		baseURL: baseUrl,
+
+	// 4. Запускаем воркеры
+	for i := 0; i < cfg.WorkersCount; i++ {
+		app.WG.Add(1)
+		go downloader.Worker(app, outDir, baseUrl, cfg)
 	}
+
+	// 5. Добавляем первую задачу в отдельной горутине
+	go func() {
+		app.Queue <- models.Job{
+			URL:   cfg.Url,
+			Depth: cfg.MaxDepth,
+		}
+		fmt.Printf("Added initial job: %s (depth: %d)\n", cfg.Url, cfg.MaxDepth)
+	}()
+
+	// 6. Ждем завершения всех задач
+	app.waitForCompletion()
+	fmt.Printf("Download completed! Saved successfully to %s\n", outDir)
 }
 
-func (cr *Crawler) StartApp() {
-	fmt.Println("Start of wget utility!")
-	fmt.Println("Write wget command \"URL of resourse you want to download\"")
+func getUserInput() (string, string) {
+	fmt.Println("=== Web Crawler Utility ===")
+	fmt.Println("Usage: wget <URL>")
+	fmt.Print("Enter command: ")
+
 	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		line := scanner.Text()
-		err := cliparser.Parse(line)
-		if err != nil {
-			fmt.Println("error on parsing cli:", err.Error())
-			os.Exit(1)
-		}
-		localDir, err := filesaver.CreateLocalDir()
-		if err != nil {
-			fmt.Println("error on creating local directory : ", err.Error())
-			os.Exit(1)
-		}
-		fmt.Println(localDir)
+	if !scanner.Scan() {
+		log.Fatal("No input provided")
 	}
-	//скачивание страниц
-	testErr := cr.Download("https://dzen.ru")
-	if testErr != nil {
-		fmt.Println("Error in download")
-		os.Exit(1)
+
+	line := strings.TrimSpace(scanner.Text())
+	if line == "" {
+		log.Fatal("Empty input")
 	}
+
+	// Валидируем команду
+	if err := cliparser.Parse(line); err != nil {
+		log.Fatal("Error parsing command:", err)
+	}
+
+	// Извлекаем URL
+	tokens := strings.Fields(line)
+	if len(tokens) < 2 {
+		log.Fatal("Not enough arguments. Usage: wget <URL>")
+	}
+	url := tokens[1]
+
+	// Создаем директорию
+	localDir := filesaver.CreateLocalDir(url)
+	return url, localDir
 }
 
-func (cr *Crawler) Download(url string) error {
-	resp, err := cr.client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+func (a *App) waitForCompletion() {
+	// Создаем канал для сигнала о завершении
+	done := make(chan bool)
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error on executing get request")
-	}
-	f, err := os.Create(cr.baseDir + "someName.html")
-	fmt.Println(f.Name())
-	if err != nil {
-		return err
-	}
+	// Запускаем мониторинг завершения
+	go func() {
+		a.WG.Wait()
+		close(a.Queue)
+		done <- true
+	}()
 
-	_, err = io.Copy(f, resp.Body)
-	if err != nil {
-		return err
+	// Ждем сигнала о завершении
+	<-done
+}
+
+// AddJob безопасно добавляет задачу в очередь
+func (a *App) AddJob(job models.Job) {
+	a.Mutex.Lock()
+	defer a.Mutex.Unlock()
+
+	if !a.Visited[job.URL] && job.Depth >= 0 {
+		a.Visited[job.URL] = true
+		select {
+		case a.Queue <- job:
+			fmt.Printf("Added job: %s (depth: %d)\n", job.URL, job.Depth)
+		default:
+			log.Printf("Queue full, skipping: %s", job.URL)
+		}
 	}
-	return nil
 }

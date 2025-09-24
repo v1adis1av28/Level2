@@ -19,12 +19,12 @@ func LoggingMiddleware() gin.HandlerFunc {
 		CallTime := time.Now()
 		c.Next()
 		method := c.Request.Method
-		url := c.Request.URL
+		url := c.Request.URL.Path
 		log.WithFields(logrus.Fields{
 			"method": method,
 			"url":    url,
 			"Time":   CallTime,
-		})
+		}).Info("Executed: ")
 		c.Next()
 	}
 }
